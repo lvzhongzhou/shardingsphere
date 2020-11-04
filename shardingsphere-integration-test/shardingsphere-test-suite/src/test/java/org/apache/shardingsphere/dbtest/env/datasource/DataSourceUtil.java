@@ -25,7 +25,7 @@ import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.shardingsphere.dbtest.env.IntegrateTestEnvironment;
-import org.apache.shardingsphere.underlying.common.database.type.DatabaseType;
+import org.apache.shardingsphere.infra.database.type.DatabaseType;
 
 import javax.sql.DataSource;
 import java.util.Collections;
@@ -44,7 +44,7 @@ public final class DataSourceUtil {
     
     /**
      * Create data source.
-     * 
+     *
      * @param databaseType database type
      * @param dataSourceName data source name
      * @return data source
@@ -76,10 +76,12 @@ public final class DataSourceUtil {
         result.setUrl(null == dataSourceName ? databaseEnvironment.getURL() : databaseEnvironment.getURL(dataSourceName));
         result.setUsername(databaseEnvironment.getUsername());
         result.setPassword(databaseEnvironment.getPassword());
-        result.setMaxTotal(15);
-        result.setValidationQuery("SELECT 1");
+        result.setMaxTotal(2);
         if ("Oracle".equals(databaseType.getName())) {
             result.setConnectionInitSqls(Collections.singleton("ALTER SESSION SET CURRENT_SCHEMA = " + dataSourceName));
+        }
+        if ("MySQL".equals(databaseType.getName())) {
+            result.setConnectionInitSqls(Collections.singleton("SET GLOBAL sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''))"));
         }
         return result;
     }
@@ -91,11 +93,13 @@ public final class DataSourceUtil {
         result.setJdbcUrl(null == dataSourceName ? databaseEnvironment.getURL() : databaseEnvironment.getURL(dataSourceName));
         result.setUsername(databaseEnvironment.getUsername());
         result.setPassword(databaseEnvironment.getPassword());
-        result.setMaximumPoolSize(15);
+        result.setMaximumPoolSize(2);
         result.setTransactionIsolation("TRANSACTION_READ_COMMITTED");
-        result.setConnectionTestQuery("SELECT 1");
         if ("Oracle".equals(databaseType.getName())) {
             result.setConnectionInitSql("ALTER SESSION SET CURRENT_SCHEMA = " + dataSourceName);
+        }
+        if ("MySQL".equals(databaseType.getName())) {
+            result.setConnectionInitSql("SET GLOBAL sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''))");
         }
         return new HikariDataSource(result);
     }

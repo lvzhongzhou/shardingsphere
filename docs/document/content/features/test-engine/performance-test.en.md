@@ -1,27 +1,27 @@
 +++
-pre = "<b>3.6.5. </b>"
+pre = "<b>3.9.5. </b>"
 title = "Performance Test"
 weight = 5
 +++
 
 ## Target
 
-The performance of Sharding-JDBC，Sharding-Proxy and MySQL would be compared here. INSERT & UPDATE & DELETE which regarded as a set of associated operation and SELECT which focus on sharding optimization are used to evaluate performance for the basic scenarios (single route, master slave & encrypt & sharding, full route). While another set of associated operation, INSERT & SELECT & DELETE, is used to evaluate performance for master slave.
+The performance of ShardingSphere-JDBC, ShardingSphere-Proxy and MySQL would be compared here. INSERT & UPDATE & DELETE which regarded as a set of associated operation and SELECT which focus on sharding optimization are used to evaluate performance for the basic scenarios (single route, replica query & encrypt & sharding, full route). While another set of associated operation, INSERT & SELECT & DELETE, is used to evaluate performance for replica query.
 To achieve the result better, these tests are performed with jmeter which based on a certain amount of data with 20 concurrent threads for 30 minutes, and one MySQL has been deployed on one machine, while the scenario of MySQL used for comparison is deployed on one machine with one instance.
 
 ## Test Scenarios
 
 ### Single Route
 
-On the basis of one thousand data volume, four databases that are deployed on the same machine and each contains 1024 tables with `id` used for database sharding and `k` used for table sharding are designed for this scenario，single route select sql statement is chosen here.
+On the basis of one thousand data volume, four databases that are deployed on the same machine and each contains 1024 tables with `id` used for database sharding and `k` used for table sharding are designed for this scenario, single route select sql statement is chosen here.
 While as a comparison, MySQL runs with INSERT & UPDATE & DELETE statement and single route select sql statement on the basis of one thousand data volume.
 
-### Master Slave
+### Replica Query
 
-One master database and one slave database, which are deployed on different machines, are designed for this scenario based on ten thousand data volume.
+One primary database and one replica database, which are deployed on different machines, are designed for this scenario based on ten thousand data volume.
 While as a comparison, MySQL runs with INSERT & SELECT & DELETE sql statement on the basis of ten thousand data volume.
 
-### Master Slave & Encrypt & Sharding
+### Replica Query & Encrypt & Sharding
 
 On the basis of one thousand data volume, four databases that are deployed on different machines and each contains 1024 tables with `id` used for database sharding, `k` used for table sharding, `c` encrypted with aes and  `pad` encrypted with md5 are designed for this scenario, single route select sql statement is chosen here.
 While as a comparison, MySQL runs with INSERT & UPDATE & DELETE statement and single route select sql statement on the basis of one thousand data volume.
@@ -49,7 +49,7 @@ CREATE TABLE `tbl` (
 
 ### Test Scenarios Configuration
 
-The same configurations are used for Sharding-JDBC and Sharding-Proxy, while MySQL with one database connected is designed for comparision.
+The same configurations are used for ShardingSphere-JDBC and ShardingSphere-Proxy, while MySQL with one database connected is designed for comparision.
 The details for these scenarios are shown as follows.
 
 #### Single Route Configuration
@@ -98,7 +98,7 @@ shardingRule:
           inline:
             shardingColumn: k
             algorithmExpression: tbl${k % 1024}
-        keyGenerator:
+        keyGenerateStrategy:
             type: SNOWFLAKE
             column: id
     defaultDatabaseStrategy:
@@ -109,13 +109,13 @@ shardingRule:
       none:
 ```
 
-#### Master Slave Configuration
+#### Replica Query Configuration
 
 ```yaml
 schemaName: sharding_db
 
 dataSources:
-  master_ds:
+  primary_ds:
     url: jdbc:mysql://***.***.***.***:****/ds?serverTimezone=UTC&useSSL=false
     username: test
     password:
@@ -123,7 +123,7 @@ dataSources:
     idleTimeoutMilliseconds: 60000
     maxLifetimeMilliseconds: 1800000
     maxPoolSize: 200
-  slave_ds_0:
+  replica_ds_0:
     url: jdbc:mysql://***.***.***.***:****/ds?serverTimezone=UTC&useSSL=false
     username: test
     password:
@@ -131,20 +131,20 @@ dataSources:
     idleTimeoutMilliseconds: 60000
     maxLifetimeMilliseconds: 1800000
     maxPoolSize: 200
-masterSlaveRule:
-  name: ms_ds
-  masterDataSourceName: master_ds
-  slaveDataSourceNames:
-    - slave_ds_0
+replicaQueryRule:
+  name: pr_ds
+  primaryDataSourceName: primary_ds
+  replicaDataSourceNames:
+    - replica_ds_0
 ```
 
-#### Master Slave & Encrypt & Sharding Configuration
+#### Replica Query & Encrypt & Sharding Configuration
 
 ```yaml
 schemaName: sharding_db
 
 dataSources:
-  master_ds_0:
+  primary_ds_0:
     url: jdbc:mysql://***.***.***.***:****/ds?serverTimezone=UTC&useSSL=false
     username: test
     password:
@@ -152,7 +152,7 @@ dataSources:
     idleTimeoutMilliseconds: 60000
     maxLifetimeMilliseconds: 1800000
     maxPoolSize: 200
-  slave_ds_0:
+  replica_ds_0:
     url: jdbc:mysql://***.***.***.***:****/ds?serverTimezone=UTC&useSSL=false
     username: test
     password:
@@ -160,7 +160,7 @@ dataSources:
     idleTimeoutMilliseconds: 60000
     maxLifetimeMilliseconds: 1800000
     maxPoolSize: 200
-  master_ds_1:
+  primary_ds_1:
     url: jdbc:mysql://***.***.***.***:****/ds?serverTimezone=UTC&useSSL=false
     username: test
     password:
@@ -168,7 +168,7 @@ dataSources:
     idleTimeoutMilliseconds: 60000
     maxLifetimeMilliseconds: 1800000
     maxPoolSize: 200
-  slave_ds_1:
+  replica_ds_1:
     url: jdbc:mysql://***.***.***.***:****/ds?serverTimezone=UTC&useSSL=false
     username: test
     password:
@@ -176,7 +176,7 @@ dataSources:
     idleTimeoutMilliseconds: 60000
     maxLifetimeMilliseconds: 1800000
     maxPoolSize: 200
-  master_ds_2:
+  primary_ds_2:
     url: jdbc:mysql://***.***.***.***:****/ds?serverTimezone=UTC&useSSL=false
     username: test
     password:
@@ -184,7 +184,7 @@ dataSources:
     idleTimeoutMilliseconds: 60000
     maxLifetimeMilliseconds: 1800000
     maxPoolSize: 200
-  slave_ds_2:
+  replica_ds_2:
     url: jdbc:mysql://***.***.***.***:****/ds?serverTimezone=UTC&useSSL=false
     username: test
     password:
@@ -192,7 +192,7 @@ dataSources:
     idleTimeoutMilliseconds: 60000
     maxLifetimeMilliseconds: 1800000
     maxPoolSize: 200
-  master_ds_3:
+  primary_ds_3:
     url: jdbc:mysql://***.***.***.***:****/ds?serverTimezone=UTC&useSSL=false
     username: test
     password:
@@ -200,7 +200,7 @@ dataSources:
     idleTimeoutMilliseconds: 60000
     maxLifetimeMilliseconds: 1800000
     maxPoolSize: 200
-  slave_ds_3:
+  replica_ds_3:
     url: jdbc:mysql://***.***.***.***:****/ds?serverTimezone=UTC&useSSL=false
     username: test
     password:
@@ -211,62 +211,62 @@ dataSources:
 shardingRule:
   tables:
     tbl:
-      actualDataNodes: ms_ds_${0..3}.tbl${0..1023}
+      actualDataNodes: pr_ds_${0..3}.tbl${0..1023}
       databaseStrategy:
         inline:
           shardingColumn: id
-          algorithmExpression: ms_ds_${id % 4}
+          algorithmExpression: pr_ds_${id % 4}
       tableStrategy:
         inline:
           shardingColumn: k
           algorithmExpression: tbl${k % 1024}
-      keyGenerator:
+      keyGenerateStrategy:
         type: SNOWFLAKE
         column: id
   bindingTables:
     - tbl
-  defaultDataSourceName: master_ds_1
+  defaultDataSourceName: primary_ds_1
   defaultTableStrategy:
     none:
-  masterSlaveRules:
-    ms_ds_0:
-      masterDataSourceName: master_ds_0
-      slaveDataSourceNames:
-        - slave_ds_0
+  replicaQueryRules:
+    pr_ds_0:
+      primaryDataSourceName: primary_ds_0
+      replicaDataSourceNames:
+        - replica_ds_0
       loadBalanceAlgorithmType: ROUND_ROBIN
-    ms_ds_1:
-      masterDataSourceName: master_ds_1
-      slaveDataSourceNames:
-        - slave_ds_1
+    pr_ds_1:
+      primaryDataSourceName: primary_ds_1
+      replicaDataSourceNames:
+        - replica_ds_1
       loadBalanceAlgorithmType: ROUND_ROBIN
-    ms_ds_2:
-      masterDataSourceName: master_ds_2
-      slaveDataSourceNames:
-        - slave_ds_2
+    pr_ds_2:
+      primaryDataSourceName: primary_ds_2
+      replicaDataSourceNames:
+        - replica_ds_2
       loadBalanceAlgorithmType: ROUND_ROBIN
-    ms_ds_3:
-      masterDataSourceName: master_ds_3
-      slaveDataSourceNames:
-        - slave_ds_3
+    pr_ds_3:
+      primaryDataSourceName: primary_ds_3
+      replicaDataSourceNames:
+        - replica_ds_3
       loadBalanceAlgorithmType: ROUND_ROBIN
 encryptRule:
   encryptors:
-    encryptor_aes:
-      type: aes
+    aes_encryptor:
+      type: AES
       props:
-        aes.key.value: 123456abc
-    encryptor_md5:
-      type: md5
+        aes-key-value: 123456abc
+    md5_encryptor:
+      type: MD5
   tables:
     sbtest:
       columns:
         c:
           plainColumn: c_plain
           cipherColumn: c_cipher
-          encryptor: encryptor_aes
+          encryptorName: aes_encryptor
         pad:
           cipherColumn: pad_cipher
-          encryptor: encryptor_md5    
+          encryptorName: md5_encryptor    
 ```
 
 #### Full Route Configuration
@@ -315,7 +315,7 @@ shardingRule:
         inline:
           shardingColumn: k
           algorithmExpression: tbl1
-      keyGenerator:
+      keyGenerateStrategy:
           type: SNOWFLAKE
           column: id
   defaultDatabaseStrategy:
@@ -379,4 +379,7 @@ sh shardingsphere-benchmark/report/script/gen_report.sh
 
 ### Display of Historical Performance Test Data
 
+In progress, please wait.
+<!--
 The data of [benchmark platform](https://shardingsphere.apache.org/benchmark/#/overview) is show daily
+-->

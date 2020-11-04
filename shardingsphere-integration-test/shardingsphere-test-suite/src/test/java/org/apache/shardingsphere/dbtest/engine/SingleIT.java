@@ -19,10 +19,11 @@ package org.apache.shardingsphere.dbtest.engine;
 
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.shardingsphere.dbtest.cases.assertion.root.IntegrateTestCaseAssertion;
 import org.apache.shardingsphere.dbtest.cases.assertion.root.SQLCaseType;
 import org.apache.shardingsphere.dbtest.cases.assertion.root.SQLValue;
-import org.apache.shardingsphere.underlying.common.database.type.DatabaseType;
+import org.apache.shardingsphere.infra.database.type.DatabaseType;
 
 import javax.xml.bind.JAXBException;
 import java.io.IOException;
@@ -31,6 +32,7 @@ import java.text.ParseException;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Getter(AccessLevel.PROTECTED)
 public abstract class SingleIT extends BaseIT {
     
@@ -44,12 +46,12 @@ public abstract class SingleIT extends BaseIT {
     
     private final String originalSQL;
     
-    public SingleIT(final String path, final IntegrateTestCaseAssertion assertion, final String ruleType,
-                    final DatabaseType databaseType, final SQLCaseType caseType, final String sql) throws IOException, JAXBException, SQLException, ParseException {
+    protected SingleIT(final String path, final IntegrateTestCaseAssertion assertion, final String ruleType, 
+                       final DatabaseType databaseType, final SQLCaseType caseType, final String sql) throws IOException, JAXBException, SQLException, ParseException {
         super(ruleType, databaseType);
         this.assertion = assertion;
         this.caseType = caseType;
-        this.originalSQL = sql;
+        originalSQL = sql;
         this.sql = convert(sql);
         expectedDataFile = getExpectedDataFile(path, ruleType, databaseType, null != assertion ? assertion.getExpectedDataFile() : null);
     }
@@ -66,5 +68,8 @@ public abstract class SingleIT extends BaseIT {
         return String.format(sql.replace("%", "$").replace("?", "%s"), parameters.toArray()).replace("$", "%")
             .replace("%%", "%").replace("'%'", "'%%'");
     }
+    
+    protected void printExceptionContext(final Exception ex) {
+        log.error("ruleType={}, databaseType={}, expectedDataFile={}, sql={}", getRuleType(), getDatabaseType().getName(), expectedDataFile, sql, ex);
+    }
 }
-

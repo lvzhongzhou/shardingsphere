@@ -20,19 +20,19 @@ grammar RLStatement;
 import Symbol, Keyword, MySQLKeyword, Literals, BaseRule;
 
 changeMasterTo
-    : CHANGE MASTER TO masterDefs  channelOption_?
+    : CHANGE MASTER TO masterDefs  channelOption?
     ;
 
 changeReplicationFilter
-    : CHANGE REPLICATION FILTER filterDefs channelOption_?
+    : CHANGE REPLICATION FILTER filterDefs channelOption?
     ;
 
 startSlave
-    : START SLAVE threadTypes_? utilOption_? connectionOptions_? channelOption_?
+    : START SLAVE threadTypes? utilOption? connectionOptions channelOption?
     ;
 
 stopSlave
-    : STOP SLAVE threadTypes_ channelOption_*
+    : STOP SLAVE threadTypes channelOption*
     ;
 
 startGroupReplication
@@ -52,30 +52,30 @@ resetMaster
     ;
 
 resetSlave
-    : RESET SLAVE ALL? channelOption_?
+    : RESET SLAVE ALL? channelOption?
     ;
 
-threadTypes_
-    : threadType_*
+threadTypes
+    : threadType+
     ;
 
-threadType_
+threadType
     : IO_THREAD | SQL_THREAD
     ;
 
-utilOption_
+utilOption
     : UNTIL ((SQL_BEFORE_GTIDS | SQL_AFTER_GTIDS) EQ_ identifier
-    | MASTER_LOG_FILE EQ_ identifier COMMA_ MASTER_LOG_POS EQ_ identifier
-    | RELAY_LOG_FILE EQ_ identifier COMMA_ RELAY_LOG_POS  EQ_ identifier
+    | MASTER_LOG_FILE EQ_ STRING_ COMMA_ MASTER_LOG_POS EQ_ NUMBER_
+    | RELAY_LOG_FILE EQ_ STRING_ COMMA_ RELAY_LOG_POS  EQ_ NUMBER_
     | SQL_AFTER_MTS_GAPS)
     ;
 
-connectionOptions_
-    : (USER EQ_ identifier)? (PASSWORD EQ_ identifier)? (DEFAULT_AUTH EQ_ identifier)? (PLUGIN_DIR EQ_ identifier)?
+connectionOptions
+    : (USER EQ_ STRING_)? (PASSWORD EQ_ STRING_)? (DEFAULT_AUTH EQ_ STRING_)? (PLUGIN_DIR EQ_ STRING_)?
     ;
 
-channelOption_
-    : FOR CHANNEL identifier
+channelOption
+    : FOR CHANNEL STRING_
     ;
 
 masterDefs

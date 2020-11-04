@@ -17,7 +17,8 @@
 
 package org.apache.shardingsphere.dbtest.env.authority;
 
-import org.apache.shardingsphere.underlying.common.database.type.DatabaseType;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.shardingsphere.infra.database.type.DatabaseType;
 
 import javax.sql.DataSource;
 import javax.xml.bind.JAXBContext;
@@ -33,6 +34,7 @@ import java.util.Map;
 /**
  * Authority environment manager.
  */
+@Slf4j
 public final class AuthorityEnvironmentManager {
     
     private final AuthorityEnvironment authorityEnvironment;
@@ -84,7 +86,8 @@ public final class AuthorityEnvironmentManager {
             for (String each : sqls) {
                 try (Statement statement = connection.createStatement()) {
                     statement.execute(each);
-                } catch (final SQLException ignored) {
+                } catch (final SQLException ex) {
+                    log.error("execute '{}' failed.", each, ex);
                 }
             }
         }

@@ -17,6 +17,7 @@
 
 package org.apache.shardingsphere.dbtest.engine.dql;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.shardingsphere.dbtest.cases.assertion.dql.DQLIntegrateTestCaseAssertion;
 import org.apache.shardingsphere.dbtest.cases.dataset.DataSet;
 import org.apache.shardingsphere.dbtest.cases.dataset.metadata.DataSetColumn;
@@ -29,7 +30,7 @@ import org.apache.shardingsphere.dbtest.env.IntegrateTestEnvironment;
 import org.apache.shardingsphere.dbtest.env.dataset.DataSetEnvironmentManager;
 import org.apache.shardingsphere.dbtest.env.datasource.DataSourceUtil;
 import org.apache.shardingsphere.dbtest.env.schema.SchemaEnvironmentManager;
-import org.apache.shardingsphere.underlying.common.database.type.DatabaseType;
+import org.apache.shardingsphere.infra.database.type.DatabaseType;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -54,10 +55,11 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+@Slf4j
 public abstract class BaseDQLIT extends SingleIT {
     
-    public BaseDQLIT(final String path, final DQLIntegrateTestCaseAssertion assertion, final String ruleType,
-                     final DatabaseType databaseType, final SQLCaseType caseType, final String sql) throws IOException, JAXBException, SQLException, ParseException {
+    protected BaseDQLIT(final String path, final DQLIntegrateTestCaseAssertion assertion, final String ruleType, 
+                        final DatabaseType databaseType, final SQLCaseType caseType, final String sql) throws IOException, JAXBException, SQLException, ParseException {
         super(path, assertion, ruleType, databaseType, caseType, sql);
     }
     
@@ -76,17 +78,8 @@ public abstract class BaseDQLIT extends SingleIT {
     }
     
     @AfterClass
-    public static void clearData() throws IOException, JAXBException, SQLException {
-        for (DatabaseType each : IntegrateTestEnvironment.getInstance().getDatabaseTypes()) {
-            clearData(each);
-        }
+    public static void clearData() {
         dropDatabases();
-    }
-    
-    private static void clearData(final DatabaseType databaseType) throws SQLException, IOException, JAXBException {
-        for (String each : IntegrateTestEnvironment.getInstance().getRuleTypes()) {
-            new DataSetEnvironmentManager(EnvironmentPath.getDataInitializeResourceFile(each), createDataSourceMap(databaseType, each)).clear();
-        }
     }
     
     private static Map<String, DataSource> createDataSourceMap(final DatabaseType databaseType, final String ruleType) throws IOException, JAXBException {
@@ -111,7 +104,7 @@ public abstract class BaseDQLIT extends SingleIT {
             assertMetaData(resultSet.getMetaData(), expectedColumns);
             assertRows(resultSet, expected.getRows());
         } catch (final AssertionError ex) {
-            System.out.println(String.format("[ERROR] SQL::%s, Parameter::[%s], Expect::%s", getOriginalSQL(), getAssertion().getParameters(), getAssertion().getExpectedDataFile()));
+            log.error("[ERROR] SQL::{}, Parameter::[{}], Expect::{}", getOriginalSQL(), getAssertion().getParameters(), getAssertion().getExpectedDataFile());
             throw ex;
         }
     }
@@ -119,6 +112,10 @@ public abstract class BaseDQLIT extends SingleIT {
     private void assertMetaData(final ResultSetMetaData actualMetaData, final List<DataSetColumn> expectedColumns) throws SQLException {
         // TODO fix shadow
         if ("shadow".equals(getRuleType())) {
+            return;
+        }
+        // Unconfigured Table doesn't have column info, should skip check column info
+        if (0 == actualMetaData.getColumnCount()) {
             return;
         }
         assertThat(actualMetaData.getColumnCount(), is(expectedColumns.size()));

@@ -69,13 +69,13 @@ public final class IntegrateTestCasesLoader {
      * @param sqlType SQL type
      * @return integrate test cases
      */
-    @SneakyThrows
     public List<? extends IntegrateTestCase> getTestCases(final SQLType sqlType) {
         integrateTestCases.putIfAbsent(sqlType, loadIntegrateTestCases(sqlType));
         return integrateTestCases.get(sqlType);
     }
     
-    private List<? extends IntegrateTestCase> loadIntegrateTestCases(final SQLType sqlType) throws IOException, URISyntaxException, JAXBException {
+    @SneakyThrows({IOException.class, URISyntaxException.class, JAXBException.class})
+    private List<? extends IntegrateTestCase> loadIntegrateTestCases(final SQLType sqlType) {
         URL url = IntegrateTestCasesLoader.class.getClassLoader().getResource("integrate/cases/");
         Preconditions.checkNotNull(url, "Cannot found integrate test cases.");
         return loadIntegrateTestCases(url, sqlType);
@@ -93,7 +93,7 @@ public final class IntegrateTestCasesLoader {
     }
     
     private static List<String> getFiles(final URL url, final SQLType sqlType) throws IOException, URISyntaxException {
-        final List<String> result = new LinkedList<>();
+        List<String> result = new LinkedList<>();
         Files.walkFileTree(Paths.get(url.toURI()), new SimpleFileVisitor<Path>() {
             
             @Override

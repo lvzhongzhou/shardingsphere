@@ -27,7 +27,7 @@ import org.apache.shardingsphere.dbtest.cases.assertion.root.SQLCaseType;
 import org.apache.shardingsphere.dbtest.engine.SingleIT;
 import org.apache.shardingsphere.dbtest.env.EnvironmentPath;
 import org.apache.shardingsphere.dbtest.env.dataset.DataSetEnvironmentManager;
-import org.apache.shardingsphere.underlying.common.database.type.DatabaseType;
+import org.apache.shardingsphere.infra.database.type.DatabaseType;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -58,8 +58,8 @@ public abstract class BaseDDLIT extends SingleIT {
     
     private final DatabaseType databaseType;
     
-    public BaseDDLIT(final String path, final DDLIntegrateTestCaseAssertion assertion, final String ruleType,
-                     final DatabaseType databaseType, final SQLCaseType caseType, final String sql) throws IOException, JAXBException, SQLException, ParseException {
+    protected BaseDDLIT(final String path, final DDLIntegrateTestCaseAssertion assertion, final String ruleType, 
+                        final DatabaseType databaseType, final SQLCaseType caseType, final String sql) throws IOException, JAXBException, SQLException, ParseException {
         super(path, assertion, ruleType, databaseType, caseType, sql);
         this.assertion = assertion;
         this.databaseType = databaseType;
@@ -91,7 +91,7 @@ public abstract class BaseDDLIT extends SingleIT {
     
     protected final void assertMetadata(final Connection connection) throws IOException, JAXBException, SQLException {
         if (null == assertion.getExpectedDataFile()) {
-            log.warn("Have empty expectedDataFile `{}`", super.getSql());
+            log.warn("Have empty expectedDataFile `{}`", getSql());
             return;
         }
         DataSet expected;
@@ -109,7 +109,7 @@ public abstract class BaseDDLIT extends SingleIT {
         try {
             assertMetadata(actualColumns, actualIndexes, expected.findMetadata(tableName));
         } catch (final AssertionError ex) {
-            System.out.println(String.format("[ERROR] SQL::%s, Parameter::[%s], Expect::%s", getOriginalSQL(), getAssertion().getParameters(), getAssertion().getExpectedDataFile()));
+            log.error("[ERROR] SQL::{}, Parameter::{}, Expect::{}", getOriginalSQL(), getAssertion().getParameters(), getAssertion().getExpectedDataFile());
             throw ex;
         }
     }

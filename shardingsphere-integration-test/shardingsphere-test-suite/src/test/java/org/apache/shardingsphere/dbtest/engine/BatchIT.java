@@ -19,6 +19,7 @@ package org.apache.shardingsphere.dbtest.engine;
 
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.shardingsphere.dbtest.cases.assertion.root.IntegrateTestCase;
 import org.apache.shardingsphere.dbtest.cases.assertion.root.IntegrateTestCaseAssertion;
 import org.apache.shardingsphere.dbtest.cases.dataset.DataSet;
@@ -27,9 +28,9 @@ import org.apache.shardingsphere.dbtest.cases.dataset.metadata.DataSetMetadata;
 import org.apache.shardingsphere.dbtest.cases.dataset.row.DataSetRow;
 import org.apache.shardingsphere.dbtest.env.EnvironmentPath;
 import org.apache.shardingsphere.dbtest.env.dataset.DataSetEnvironmentManager;
-import org.apache.shardingsphere.sharding.core.strategy.algorithm.sharding.inline.InlineExpressionParser;
-import org.apache.shardingsphere.underlying.common.database.type.DatabaseType;
-import org.apache.shardingsphere.underlying.common.datanode.DataNode;
+import org.apache.shardingsphere.sharding.algorithm.sharding.inline.InlineExpressionParser;
+import org.apache.shardingsphere.infra.database.type.DatabaseType;
+import org.apache.shardingsphere.infra.datanode.DataNode;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -57,7 +58,8 @@ import java.util.Set;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
-@Getter(value = AccessLevel.PROTECTED)
+@Slf4j
+@Getter(AccessLevel.PROTECTED)
 public abstract class BatchIT extends BaseIT {
     
     private static DataSetEnvironmentManager dataSetEnvironmentManager;
@@ -68,8 +70,8 @@ public abstract class BatchIT extends BaseIT {
     
     private final Collection<String> expectedDataFiles;
     
-    public BatchIT(final IntegrateTestCase integrateTestCase,
-                   final String ruleType, final DatabaseType databaseType, final String sql) throws IOException, JAXBException, SQLException {
+    protected BatchIT(final IntegrateTestCase integrateTestCase, 
+                      final String ruleType, final DatabaseType databaseType, final String sql) throws IOException, JAXBException, SQLException {
         super(ruleType, databaseType);
         this.integrateTestCase = integrateTestCase;
         this.sql = sql;
@@ -96,19 +98,22 @@ public abstract class BatchIT extends BaseIT {
     }
     
     @After
-    public void clearData() throws SQLException {
+    public void clearData() {
         dataSetEnvironmentManager.clear();
     }
     
     protected final void assertDataSet(final int[] actualUpdateCounts) throws SQLException, IOException, JAXBException {
         Collection<DataSet> expectedList = new LinkedList<>();
-        assertThat(actualUpdateCounts.length, is(getExpectedDataFiles().size()));
+        assertThat(actualUpdateCounts.length, is(expectedDataFiles.size()));
         int count = 0;
-        for (String each : getExpectedDataFiles()) {
+        for (String each : expectedDataFiles) {
             try (FileReader reader = new FileReader(each)) {
                 DataSet expected = (DataSet) JAXBContext.newInstance(DataSet.class).createUnmarshaller().unmarshal(reader);
                 assertThat(actualUpdateCounts[count], is(expected.getUpdateCount()));
                 expectedList.add(expected);
+            } catch (final AssertionError ex) {
+                log.error("[ERROR] SQL::{}, Expect::{}", sql, each);
+                throw ex;
             }
             count++;
         }

@@ -24,11 +24,12 @@
         <version>5.0.0-RC1-SNAPSHOT</version>
     </parent>
     <artifactId>shardingsphere-integration-test</artifactId>
-    <name>${project.artifactId}</name>
     <packaging>pom</packaging>
+    <name>${project.artifactId}</name>
     
     <modules>
-        <module>sharding-proxy-docker-build</module>
+        <module>shardingsphere-test-fixture</module>
+        <module>shardingsphere-proxy-docker-build</module>
         <module>shardingsphere-test-suite</module>
     </modules>
     

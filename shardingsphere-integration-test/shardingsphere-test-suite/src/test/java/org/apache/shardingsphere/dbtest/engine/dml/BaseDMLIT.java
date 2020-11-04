@@ -17,6 +17,8 @@
 
 package org.apache.shardingsphere.dbtest.engine.dml;
 
+import java.sql.Statement;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.shardingsphere.dbtest.cases.assertion.dml.DMLIntegrateTestCaseAssertion;
 import org.apache.shardingsphere.dbtest.cases.assertion.root.SQLCaseType;
 import org.apache.shardingsphere.dbtest.cases.dataset.DataSet;
@@ -26,9 +28,10 @@ import org.apache.shardingsphere.dbtest.cases.dataset.row.DataSetRow;
 import org.apache.shardingsphere.dbtest.engine.SingleIT;
 import org.apache.shardingsphere.dbtest.env.EnvironmentPath;
 import org.apache.shardingsphere.dbtest.env.dataset.DataSetEnvironmentManager;
-import org.apache.shardingsphere.sharding.core.strategy.algorithm.sharding.inline.InlineExpressionParser;
-import org.apache.shardingsphere.underlying.common.database.type.DatabaseType;
-import org.apache.shardingsphere.underlying.common.datanode.DataNode;
+import org.apache.shardingsphere.infra.database.type.dialect.PostgreSQLDatabaseType;
+import org.apache.shardingsphere.sharding.algorithm.sharding.inline.InlineExpressionParser;
+import org.apache.shardingsphere.infra.database.type.DatabaseType;
+import org.apache.shardingsphere.infra.datanode.DataNode;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -51,12 +54,13 @@ import java.util.List;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
+@Slf4j
 public abstract class BaseDMLIT extends SingleIT {
     
     private final DataSetEnvironmentManager dataSetEnvironmentManager;
     
-    public BaseDMLIT(final String path, final DMLIntegrateTestCaseAssertion assertion, final String ruleType,
-                     final DatabaseType databaseType, final SQLCaseType caseType, final String sql) throws IOException, JAXBException, SQLException, ParseException {
+    protected BaseDMLIT(final String path, final DMLIntegrateTestCaseAssertion assertion, final String ruleType, 
+                        final DatabaseType databaseType, final SQLCaseType caseType, final String sql) throws IOException, JAXBException, SQLException, ParseException {
         super(path, assertion, ruleType, databaseType, caseType, sql);
         dataSetEnvironmentManager = new DataSetEnvironmentManager(EnvironmentPath.getDataInitializeResourceFile(getRuleType()), getDataSourceMap());
     }
@@ -77,7 +81,7 @@ public abstract class BaseDMLIT extends SingleIT {
     }
     
     @After
-    public void clearData() throws SQLException {
+    public void clearData() {
         dataSetEnvironmentManager.clear();
     }
     
@@ -92,13 +96,22 @@ public abstract class BaseDMLIT extends SingleIT {
             DataSetMetadata expectedDataSetMetadata = expected.getMetadataList().get(0);
             for (String each : new InlineExpressionParser(expectedDataSetMetadata.getDataNodes()).splitAndEvaluate()) {
                 DataNode dataNode = new DataNode(each);
+                String sql;
+                if (getDatabaseType() instanceof PostgreSQLDatabaseType) {
+                    try (Connection connection = getDataSourceMap().get(dataNode.getDataSourceName()).getConnection()) {
+                        String primaryKeyColumnName = getPostgreSQLTablePrimaryKeyColumnName(connection, dataNode.getTableName());
+                        sql = String.format("SELECT * FROM %s ORDER BY %s ASC", dataNode.getTableName(), primaryKeyColumnName);
+                    }
+                } else {
+                    sql = String.format("SELECT * FROM %s", dataNode.getTableName());
+                }
                 try (Connection connection = getDataSourceMap().get(dataNode.getDataSourceName()).getConnection();
-                     PreparedStatement preparedStatement = connection.prepareStatement(String.format("SELECT * FROM %s", dataNode.getTableName()))) {
+                     PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
                     assertDataSet(preparedStatement, expected.findRows(dataNode), expectedDataSetMetadata);
                 }
             }
         } catch (final AssertionError ex) {
-            System.out.println(String.format("[ERROR] SQL::%s, Parameter::[%s], Expect::%s", getOriginalSQL(), getAssertion().getParameters(), getAssertion().getExpectedDataFile()));
+            log.error("[ERROR] SQL::{}, Parameter::{}, Expect::{}", getOriginalSQL(), getAssertion().getParameters(), getAssertion().getExpectedDataFile());
             throw ex;
         }
     }
@@ -107,6 +120,18 @@ public abstract class BaseDMLIT extends SingleIT {
         try (ResultSet actualResultSet = actualPreparedStatement.executeQuery()) {
             assertMetaData(actualResultSet.getMetaData(), expectedDataSetMetadata.getColumns());
             assertRows(actualResultSet, expectedDataSetRows);
+        }
+    }
+    
+    private String getPostgreSQLTablePrimaryKeyColumnName(final Connection connection, final String tableName) throws SQLException {
+        String sql = "SELECT a.attname, format_type(a.atttypid, a.atttypmod) AS data_type FROM pg_index i JOIN pg_attribute a "
+            + "ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey) WHERE i.indrelid = '"
+            + tableName + "'::regclass AND i.indisprimary";
+        try (Statement statement = connection.createStatement(); ResultSet resultSet = statement.executeQuery(sql)) {
+            if (!resultSet.next()) {
+                throw new SQLException("can not get primary key of " + tableName);
+            }
+            return resultSet.getString("attname");
         }
     }
     

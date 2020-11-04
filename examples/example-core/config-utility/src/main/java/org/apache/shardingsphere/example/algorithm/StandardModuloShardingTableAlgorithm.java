@@ -29,14 +29,20 @@ import java.util.Set;
 
 public final class StandardModuloShardingTableAlgorithm implements StandardShardingAlgorithm<Long> {
     
+    private Properties props = new Properties();
+    
+    @Override
+    public void init() {
+    }
+    
     @Override
     public String doSharding(final Collection<String> tableNames, final PreciseShardingValue<Long> shardingValue) {
         for (String each : tableNames) {
-            if (each.endsWith(shardingValue.getValue() % 2 + "")) {
+            if (each.endsWith(String.valueOf(shardingValue.getValue() % 2))) {
                 return each;
             }
         }
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("");
     }
     
     @Override
@@ -49,22 +55,23 @@ public final class StandardModuloShardingTableAlgorithm implements StandardShard
                 }
             }
         } else {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("");
         }
         return result;
     }
     
     @Override
+    public Properties getProps() {
+        return props;
+    }
+    
+    @Override
+    public void setProps(final Properties props) {
+        this.props = props;
+    }
+    
+    @Override
     public String getType() {
         return "STANDARD_TEST_TBL";
-    }
-    
-    @Override
-    public Properties getProperties() {
-        return new Properties();
-    }
-    
-    @Override
-    public void setProperties(final Properties properties) {
     }
 }

@@ -19,9 +19,9 @@ package org.apache.shardingsphere.dbtest.env;
 
 import com.google.common.base.Splitter;
 import lombok.Getter;
-import org.apache.shardingsphere.underlying.common.database.type.DatabaseTypes;
+import org.apache.shardingsphere.infra.database.type.DatabaseTypeRegistry;
 import org.apache.shardingsphere.dbtest.env.datasource.DatabaseEnvironment;
-import org.apache.shardingsphere.underlying.common.database.type.DatabaseType;
+import org.apache.shardingsphere.infra.database.type.DatabaseType;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -46,18 +46,21 @@ public final class IntegrateTestEnvironment {
     
     private final Map<DatabaseType, DatabaseEnvironment> databaseEnvironments;
     
+    private final String activeProfile;
+    
     private IntegrateTestEnvironment() {
+        activeProfile = loadActiveProfile();
         Properties prop = new Properties();
         try {
-            prop.load(IntegrateTestEnvironment.class.getClassLoader().getResourceAsStream("integrate/env.properties"));
+            prop.load(IntegrateTestEnvironment.class.getClassLoader().getResourceAsStream(getEnvironmentProperties()));
         } catch (final IOException ex) {
-            ex.printStackTrace();
+            throw new RuntimeException(ex);
         }
         runAdditionalTestCases = Boolean.parseBoolean(prop.getProperty("run.additional.cases"));
         ruleTypes = Splitter.on(",").trimResults().splitToList(prop.getProperty("rule.types"));
         databaseTypes = new LinkedList<>();
         for (String each : prop.getProperty("databases", "H2").split(",")) {
-            databaseTypes.add(DatabaseTypes.getActualDatabaseType(each.trim()));
+            databaseTypes.add(DatabaseTypeRegistry.getActualDatabaseType(each.trim()));
         }
         databaseEnvironments = new HashMap<>(databaseTypes.size(), 1);
         for (DatabaseType each : databaseTypes) {
@@ -67,19 +70,19 @@ public final class IntegrateTestEnvironment {
                     break;
                 case "MySQL":
                     databaseEnvironments.put(each, new DatabaseEnvironment(each, prop.getProperty("mysql.host", "127.0.0.1"), Integer.parseInt(prop.getProperty("mysql.port", "3306")),
-                            prop.getProperty("mysql.username", "root"), prop.getProperty("mysql.password", "")));
+                        prop.getProperty("mysql.username", "root"), prop.getProperty("mysql.password", "")));
                     break;
                 case "PostgreSQL":
                     databaseEnvironments.put(each, new DatabaseEnvironment(each, prop.getProperty("postgresql.host", "127.0.0.1"), Integer.parseInt(prop.getProperty("postgresql.port", "5432")),
-                            prop.getProperty("postgresql.username", "postgres"), prop.getProperty("postgresql.password", "")));
+                        prop.getProperty("postgresql.username", "postgres"), prop.getProperty("postgresql.password", "")));
                     break;
                 case "SQLServer":
                     databaseEnvironments.put(each, new DatabaseEnvironment(each, prop.getProperty("sqlserver.host", "127.0.0.1"), Integer.parseInt(prop.getProperty("sqlserver.port", "1433")),
-                            prop.getProperty("sqlserver.username", "sa"), prop.getProperty("sqlserver.password", "Jdbc1234")));
+                        prop.getProperty("sqlserver.username", "sa"), prop.getProperty("sqlserver.password", "Jdbc1234")));
                     break;
                 case "Oracle":
                     databaseEnvironments.put(each, new DatabaseEnvironment(each, prop.getProperty("oracle.host", "127.0.0.1"), Integer.parseInt(prop.getProperty("oracle.port", "1521")),
-                            prop.getProperty("oracle.username", "jdbc"), prop.getProperty("oracle.password", "jdbc")));
+                        prop.getProperty("oracle.username", "jdbc"), prop.getProperty("oracle.password", "jdbc")));
                     break;
                 default:
                     break;
@@ -87,9 +90,38 @@ public final class IntegrateTestEnvironment {
         }
     }
     
+    private String loadActiveProfile() {
+        Properties prop = new Properties();
+        try {
+            prop.load(IntegrateTestEnvironment.class.getClassLoader().getResourceAsStream("integrate/profile.properties"));
+        } catch (final IOException ex) {
+            throw new RuntimeException(ex);
+        }
+        return prop.getProperty("mode");
+    }
+    
+    private String getEnvironmentProperties() {
+        if ("jdbc-ci".equals(activeProfile)) {
+            return "integrate/env-jdbc-ci.properties";
+        }
+        if ("proxy".equals(activeProfile)) {
+            return "integrate/env-proxy.properties";
+        }
+        return "integrate/env-jdbc-local.properties";
+    }
+    
+    /**
+     * Is proxy environment.
+     *
+     * @return true or false
+     */
+    public boolean isProxyEnvironment() {
+        return "proxy".equals(activeProfile);
+    }
+    
     /**
      * Get instance.
-     * 
+     *
      * @return singleton instance
      */
     public static IntegrateTestEnvironment getInstance() {

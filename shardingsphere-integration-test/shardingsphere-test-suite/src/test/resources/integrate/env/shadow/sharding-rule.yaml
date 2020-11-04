@@ -16,31 +16,41 @@
 #
 
 rules:
-- !!org.apache.shardingsphere.sharding.core.yaml.config.shadow.YamlShadowRuleConfiguration
+- !SHADOW
   column: shadow
-  shadowMappings:
-    db: shadow_db
+  sourceDataSourceNames:
+    - ds
+  shadowDataSourceNames:
+    - shadow_db
 
-- !!org.apache.shardingsphere.sharding.core.yaml.config.sharding.YamlShardingRuleConfiguration
+- !SHARDING
   tables:
     t_order_item:
       actualDataNodes: db.t_order_item
       databaseStrategy:
         standard:
           shardingColumn: item_id
-          shardingAlgorithm:
-            type: INLINE
-            props:
-              algorithm.expression: db
+          shardingAlgorithmName: database_inline
       tableStrategy:
         standard:
           shardingColumn: item_id
-          shardingAlgorithm:
-            type: INLINE
-            props:
-              algorithm.expression: t_order_item
-      keyGenerator:
-        type: Constant
+          shardingAlgorithmName: table_inline
+      keyGenerateStrategy:
         column: item_id
+        keyGeneratorName: constant
   defaultTableStrategy:
     none:
+  
+  shardingAlgorithms:
+    database_inline:
+      type: INLINE
+      props:
+        algorithm-expression: db
+    table_inline:
+      type: INLINE
+      props:
+        algorithm-expression: t_order_item
+  
+  keyGenerators:
+    constant:
+      type: Constant

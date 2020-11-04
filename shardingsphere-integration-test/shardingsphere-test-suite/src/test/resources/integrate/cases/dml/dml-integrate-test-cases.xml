@@ -33,10 +33,6 @@
         <assertion expected-data-file="insert_for_order_1.xml" />
     </dml-test-case>
     
-    <dml-test-case sql="INSERT /*+ index(field1) */ INTO t_order (order_id, user_id, status) VALUES (1, 1, 'insert') RETURNING order_id" db-types="PostgreSQL">
-        <assertion expected-data-file="insert_for_order_1.xml" />
-    </dml-test-case>
-    
     <dml-test-case sql="INSERT INTO t_order (order_id, user_id, status) VALUES (1, 1, 'insert'), (2, 2, 'insert2')" db-types="MySQL">
         <assertion expected-data-file="insert_multiple_values_for_order_1_2.xml" />
     </dml-test-case>
@@ -90,7 +86,7 @@
     </dml-test-case>
     
     <dml-test-case sql="INSERT INTO t_order_item values(?, ?, 'insert', '2017-08-08')">
-        <assertion sharding-rule-type="dbtbl_with_masterslave" parameters="1:int, 1:int" expected-data-file="insert_with_generate_key_column.xml" />
+        <assertion sharding-rule-type="dbtbl_with_replica_query" parameters="1:int, 1:int" expected-data-file="insert_with_generate_key_column.xml" />
         <!-- TODO add gen column on create table -->
         <!--<assertion parameters="1:int, 1:int" expected-data-file="insert_with_generate_key_column.xml" />-->
     </dml-test-case>
@@ -120,7 +116,7 @@
     </dml-test-case>
     
     <!--<dml-test-case sql="INSERT INTO t_order_item(order_id, user_id, status, creation_date) values (?, ?, 'insert', '2017-08-08'), (?, ?, 'insert', '2017-08-08')">-->
-        <!--<assertion sharding-rule-type="dbtbl_with_masterslave" parameters="1:int, 1:int, 2:int, 2:int" expected-data-file="batch_insert_without_generate_key_column.xml" />-->
+        <!--<assertion sharding-rule-type="dbtbl_with_replica_query" parameters="1:int, 1:int, 2:int, 2:int" expected-data-file="batch_insert_without_generate_key_column.xml" />-->
         <!--&lt;!&ndash; TODO add gen column on create table &ndash;&gt;-->
         <!--&lt;!&ndash;<assertion parameters="1:int, 1:int, 2:int, 2:int" expected-data-file="batch_insert_without_generate_key_column.xml" />&ndash;&gt;-->
     <!--</dml-test-case>-->
@@ -157,6 +153,10 @@
         <assertion parameters="1000:int, 0:int, 10:int" expected-data-file="update.xml" />
     </dml-test-case>
 
+    <dml-test-case sql="update t_order set status = status where user_id = user_id AND order_id = 1000">
+        <assertion expected-data-file="update_with_column_equal_column.xml" />
+    </dml-test-case>
+
     <dml-test-case sql="DELETE FROM t_order WHERE order_id = ? AND user_id = ? AND status=?">
         <assertion parameters="1000:int, 10:int, init:String" expected-data-file="delete_with_sharding_value.xml" />
     </dml-test-case>
@@ -177,7 +177,8 @@
         <assertion expected-data-file="delete_with_special_comments_returning_without_sharding_value.xml" />
     </dml-test-case>
 
-    <dml-test-case sql="DELETE o FROM t_order AS o WHERE status=?" db-types="MySQL,Oracle,SQLServer">
-        <assertion parameters="init:String" expected-data-file="delete_with_alias.xml" />
-    </dml-test-case>
+    <!-- Can't support delete multiple tables-->
+    <!--<dml-test-case sql="DELETE o FROM t_order AS o WHERE status=?" db-types="MySQL,Oracle,SQLServer">-->
+        <!--<assertion parameters="init:String" expected-data-file="delete_with_alias.xml" />-->
+    <!--</dml-test-case>-->
 </integrate-test-cases>

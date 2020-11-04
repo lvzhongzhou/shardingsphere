@@ -95,17 +95,17 @@
         <assertion parameters="10:int, 11:int, 1009:int, 1108:int, none:String" expected-data-file="empty_order_item.xml" />
     </dql-test-case>
     
-    <dql-test-case sql="SELECT i.* FROM t_order o JOIN t_order_item i ON o.user_id = i.user_id AND o.order_id = i.order_id JOIN `select` c ON o.status = c.status WHERE o.user_id IN (?, ?) AND o.order_id BETWEEN ? AND ? AND o.status = ? ORDER BY i.item_id" db-types="MySQL">
+    <dql-test-case sql="SELECT i.* FROM t_order o JOIN t_order_item i ON o.user_id = i.user_id AND o.order_id = i.order_id JOIN `key_word` c ON o.status = c.status WHERE o.user_id IN (?, ?) AND o.order_id BETWEEN ? AND ? AND o.status = ? ORDER BY i.item_id" db-types="MySQL">
         <assertion parameters="10:int, 11:int, 1001:int, 1100:int, init:String" expected-data-file="select_sharding_route_with_broadcast_table.xml" />
         <assertion parameters="10:int, 11:int, 1009:int, 1108:int, none:String" expected-data-file="empty_order_item.xml" />
     </dql-test-case>
     
-    <dql-test-case sql="SELECT i.* FROM t_order o JOIN t_order_item i ON o.user_id = i.user_id AND o.order_id = i.order_id JOIN &quot;select&quot; c ON o.status = c.status WHERE o.user_id IN (?, ?) AND o.order_id BETWEEN ? AND ? AND c.status = ? ORDER BY i.item_id" db-types="PostgreSQL,Oracle">
+    <dql-test-case sql="SELECT i.* FROM t_order o JOIN t_order_item i ON o.user_id = i.user_id AND o.order_id = i.order_id JOIN &quot;key_word&quot; c ON o.status = c.status WHERE o.user_id IN (?, ?) AND o.order_id BETWEEN ? AND ? AND c.status = ? ORDER BY i.item_id" db-types="PostgreSQL,Oracle">
         <assertion parameters="10:int, 11:int, 1001:int, 1100:int, init:String" expected-data-file="select_sharding_route_with_broadcast_table.xml" />
         <assertion parameters="10:int, 11:int, 1009:int, 1108:int, none:String" expected-data-file="empty_order_item.xml" />
     </dql-test-case>
     
-    <dql-test-case sql="SELECT i.* FROM t_order o JOIN t_order_item i ON o.user_id = i.user_id AND o.order_id = i.order_id JOIN [select] c ON o.status = c.status WHERE o.user_id IN (?, ?) AND o.order_id BETWEEN ? AND ? AND c.status = ? ORDER BY i.item_id" db-types="SQLServer">
+    <dql-test-case sql="SELECT i.* FROM t_order o JOIN t_order_item i ON o.user_id = i.user_id AND o.order_id = i.order_id JOIN [key_word] c ON o.status = c.status WHERE o.user_id IN (?, ?) AND o.order_id BETWEEN ? AND ? AND c.status = ? ORDER BY i.item_id" db-types="SQLServer">
         <assertion parameters="10:int, 11:int, 1001:int, 1100:int, init:String" expected-data-file="select_sharding_route_with_broadcast_table.xml" />
         <assertion parameters="10:int, 11:int, 1009:int, 1108:int, none:String" expected-data-file="empty_order_item.xml" />
     </dql-test-case>
@@ -116,16 +116,6 @@
     
     <dql-test-case sql="SELECT i.* FROM t_order o FORCE INDEX(order_index) JOIN t_order_item i ON o.order_id=i.order_id WHERE o.order_id = ?" db-types="MySQL">
         <assertion parameters="1000:int" expected-data-file="select_with_force_index_join.xml" />
-    </dql-test-case>
-
-    <dql-test-case sql="SELECT * FROM t_order WHERE rule = ?::jsonb AND start_point=ST_GeographyFromText('SRID=4326;POINT('||?||' '||?||')') AND user_id = ? AND order_id = ?" db-types="PostgreSQL">
-        <assertion parameters="'{&quot;rule2&quot;:&quot;null&quot;}', 100:int, 200:int, 10:int, 1000:int" expected-data-file="select_equal_with_single_table.xml" />
-        <assertion parameters="'{&quot;rule2&quot;:&quot;null&quot;}', 100:int, 200:int, 12:int, 1000:int" expected-data-file="empty_order.xml" />
-    </dql-test-case>
-
-    <dql-test-case sql="SELECT * FROM t_order WHERE rule IN (?::jsonb, ?::jsonb) AND start_point=ST_GeographyFromText('SRID=4326;POINT('||?||' '||?||')') AND user_id = ? AND order_id = ?" db-types="PostgreSQL">
-        <assertion parameters="'{&quot;rule2&quot;:&quot;null&quot;}', '{&quot;rule2&quot;:&quot;null&quot;}', 100:int, 200:int, 10:int, 1000:int" expected-data-file="select_equal_with_single_table.xml" />
-        <assertion parameters="'{&quot;rule2&quot;:&quot;null&quot;}', '{&quot;rule2&quot;:&quot;null&quot;}', 100:int, 200:int, 12:int, 1000:int" expected-data-file="empty_order.xml" />
     </dql-test-case>
     
     <dql-test-case sql="SELECT SUM(user_id) AS user_id_sum FROM t_order">
@@ -237,7 +227,7 @@
     </dql-test-case>
     
     <!--<dql-test-case sql="SELECT date_format(creation_date,  '%%y-%%m-%%d') as creation_date, count(*) as c_number FROM `t_order_item` WHERE order_id in (?, ?) GROUP BY date_format(creation_date, '%%y-%%m-%%d')" db-types="MySQL">-->
-        <!--<assertion sharding-rule-type="dbtbl_with_masterslave" parameters="1000:int, 1100:int" expected-data-file="select_group_by_with_date_function.xml" />-->
+        <!--<assertion sharding-rule-type="dbtbl_with_replica_query" parameters="1000:int, 1100:int" expected-data-file="select_group_by_with_date_function.xml" />-->
     <!--</dql-test-case>-->
     
     <dql-test-case sql="SELECT * FROM t_order WHERE order_id = ? OR order_id = ?">
@@ -414,18 +404,15 @@
     <dql-test-case sql="SELECT status as 'status' FROM t_order" db-types="MySQL">
         <assertion expected-data-file="select_alias_as_single_quote_string.xml" />
     </dql-test-case>
+    
+    <!-- // TODO -->
+<!--    <dql-test-case sql="SELECT DISTINCT item_id FROM t_order_item">-->
+<!--        <assertion expected-data-file="select_distinct_with_single_column_without_order_by.xml" />-->
+<!--    </dql-test-case>-->
 
-    <dql-test-case sql="SELECT status as &quot;status&quot; FROM t_order" db-types="MySQL">
-        <assertion expected-data-file="select_alias_as_single_quote_string.xml" />
-    </dql-test-case>
-
-    <dql-test-case sql="SELECT DISTINCT item_id FROM t_order_item">
-        <assertion expected-data-file="select_distinct_with_single_column_without_order_by.xml" />
-    </dql-test-case>
-
-    <dql-test-case sql="SELECT DISTINCT order_id, user_id, status FROM t_order">
-        <assertion expected-data-file="select_distinct_with_multi_column_without_order_by.xml" />
-    </dql-test-case>
+<!--    <dql-test-case sql="SELECT DISTINCT order_id, user_id, status FROM t_order">-->
+<!--        <assertion expected-data-file="select_distinct_with_multi_column_without_order_by.xml" />-->
+<!--    </dql-test-case>-->
     
     <!-- // TODO -->
     <!--<dql-test-case sql="SELECT DISTINCT t_order.order_id FROM t_order order by t_order.order_id">-->
@@ -464,9 +451,10 @@
         <assertion expected-data-file="select_distinct_with_count.xml" />
     </dql-test-case>
     
-    <dql-test-case sql="SELECT AVG(DISTINCT order_id) FROM t_order WHERE order_id &lt; 1100" db-types="MySQL">
-        <assertion expected-data-file="select_distinct_with_avg.xml" />
-    </dql-test-case>
+    <!-- // TODO -->
+<!--    <dql-test-case sql="SELECT AVG(DISTINCT order_id) FROM t_order WHERE order_id &lt; 1100" db-types="MySQL">-->
+<!--        <assertion expected-data-file="select_distinct_with_avg.xml" />-->
+<!--    </dql-test-case>-->
     
     <dql-test-case sql="SELECT DISTINCT(item_id) FROM t_order_item ORDER BY item_id">
         <assertion expected-data-file="select_distinct_function.xml" />
@@ -498,5 +486,10 @@
 
     <dql-test-case sql="SELECT * FROM t_order WHERE user_id = ? FOR UPDATE" lock-clause="true">
         <assertion parameters="10:int" expected-data-file="select_for_update.xml" />
+    </dql-test-case>
+
+    <dql-test-case sql="select t.*,o.item_id as item_id,(case when t.status = 'init' then '已启用' when t.status = 'failed' then '已停用' end) as stateName
+    from t_order t left join t_order_item as o on o.order_id =t.order_id where t.order_id=1000 limit 1" db-types="MySQL,H2">
+        <assertion expected-data-file="select_with_case_expression.xml" />
     </dql-test-case>
 </integrate-test-cases>
